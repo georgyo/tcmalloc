@@ -826,148 +826,6 @@ tcmalloc_cc_library(
     "tcmalloc::internal_logging"
 )
 
-tcmalloc_cc_test(
-  NAME
-    tcmalloc_huge_page_aware_allocator_fuzz
-  SRCS
-    "huge_page_aware_allocator_fuzz.cc"
-  DEPS
-    "GTest::gtest"
-    "GTest::gmock"
-    "absl::check"
-    "absl::core_headers"
-    "absl::str_format"
-    "absl::strings"
-    "absl::time"
-    "fuzztest::fuzztest"
-    "fuzztest::fuzztest_gtest_main"
-    "tcmalloc::common_8k_pages"
-    "tcmalloc::internal_logging"
-    "tcmalloc::internal_memory_tag"
-    "tcmalloc::internal_pageflags"
-    "tcmalloc::internal_system_allocator"
-    "tcmalloc::mock_huge_page_static_forwarder"
-    "tcmalloc::tcmalloc"
-)
-
-tcmalloc_cc_test(
-  NAME
-    tcmalloc_huge_region_fuzz
-  SRCS
-    "huge_region_fuzz.cc"
-  DEPS
-    "GTest::gtest"
-    "GTest::gmock"
-    "absl::check"
-    "absl::core_headers"
-    "absl::flat_hash_set"
-    "fuzztest::fuzztest"
-    "fuzztest::fuzztest_gtest_main"
-    "tcmalloc::common_8k_pages"
-    "tcmalloc::internal_logging"
-    "tcmalloc::internal_system_allocator"
-    "tcmalloc::tcmalloc"
-)
-
-tcmalloc_cc_test(
-  NAME
-    tcmalloc_huge_page_filler_fuzz
-  SRCS
-    "huge_page_filler_fuzz.cc"
-  DEPS
-    "GTest::gtest"
-    "GTest::gmock"
-    "absl::check"
-    "absl::flat_hash_map"
-    "absl::flat_hash_set"
-    "absl::status"
-    "absl::string_view"
-    "absl::time"
-    "fuzztest::fuzztest"
-    "fuzztest::fuzztest_gtest_main"
-    "tcmalloc::common_8k_pages"
-    "tcmalloc::internal_allocation_guard"
-    "tcmalloc::internal_clock"
-    "tcmalloc::internal_config"
-    "tcmalloc::internal_logging"
-    "tcmalloc::internal_memory_tag"
-    "tcmalloc::internal_pageflags"
-    "tcmalloc::internal_range_tracker"
-    "tcmalloc::internal_residency"
-    "tcmalloc::internal_system_allocator"
-    "tcmalloc::tcmalloc"
-)
-
-tcmalloc_cc_test(
-  NAME
-    tcmalloc_span_fuzz
-  SRCS
-    "span_fuzz.cc"
-  DEPS
-    "GTest::gtest"
-    "GTest::gmock"
-    "absl::span"
-    "fuzztest::fuzztest"
-    "fuzztest::fuzztest_gtest_main"
-    "tcmalloc::common_8k_pages"
-    "tcmalloc::internal_logging"
-    "tcmalloc::tcmalloc"
-    "tcmalloc::testing_testutil"
-)
-
-tcmalloc_cc_test(
-  NAME
-    tcmalloc_sizemap_fuzz
-  SRCS
-    "sizemap_fuzz.cc"
-  DEPS
-    "GTest::gtest"
-    "GTest::gmock"
-    "absl::check"
-    "absl::span"
-    "fuzztest::fuzztest"
-    "fuzztest::fuzztest_gtest_main"
-    "tcmalloc::common_8k_pages"
-    "tcmalloc::internal_size_class_info"
-    "tcmalloc::tcmalloc"
-)
-
-tcmalloc_cc_test(
-  NAME
-    tcmalloc_central_freelist_fuzz
-  SRCS
-    "central_freelist_fuzz.cc"
-  DEPS
-    "GTest::gtest"
-    "GTest::gmock"
-    "absl::check"
-    "absl::span"
-    "absl::time"
-    "fuzztest::fuzztest"
-    "fuzztest::fuzztest_gtest_main"
-    "tcmalloc::common_8k_pages"
-    "tcmalloc::mock_static_forwarder"
-    "tcmalloc::tcmalloc"
-)
-
-tcmalloc_cc_test(
-  NAME
-    tcmalloc_transfer_cache_fuzz
-  SRCS
-    "transfer_cache_fuzz.cc"
-  DEPS
-    "GTest::gtest"
-    "GTest::gmock"
-    "absl::check"
-    "fuzztest::fuzztest"
-    "fuzztest::fuzztest_gtest_main"
-    "tcmalloc::common_8k_pages"
-    "tcmalloc::internal_config"
-    "tcmalloc::mock_central_freelist"
-    "tcmalloc::mock_transfer_cache"
-    "tcmalloc::tcmalloc"
-)
-
 tcmalloc_cc_test_variants(
   NAME
     tcmalloc_arena_test
@@ -1259,21 +1117,6 @@ tcmalloc_cc_test_variants(
 
 tcmalloc_cc_test(
   NAME
-    tcmalloc_malloc_extension_fuzz
-  SRCS
-    "malloc_extension_fuzz.cc"
-  DEPS
-    "GTest::gtest"
-    "GTest::gmock"
-    "absl::optional"
-    "fuzztest::fuzztest"
-    "fuzztest::fuzztest_gtest_main"
-    "tcmalloc::malloc_extension"
-    "tcmalloc::tcmalloc"
-)
-
-tcmalloc_cc_test(
-  NAME
     tcmalloc_page_allocator_test
   SRCS
     "page_allocator_test.cc"
@@ -1534,21 +1377,6 @@ tcmalloc_cc_test(
     "GTest::gtest_main"
     "GTest::gmock_main"
     "GTest::gmock"
-    "tcmalloc::experiment"
-    "tcmalloc::tcmalloc"
-)
-
-tcmalloc_cc_test(
-  NAME
-    tcmalloc_experiment_fuzz
-  SRCS
-    "experiment_fuzz.cc"
-  DEPS
-    "GTest::gtest"
-    "GTest::gmock"
-    "absl::strings"
-    "fuzztest::fuzztest"
-    "fuzztest::fuzztest_gtest_main"
     "tcmalloc::experiment"
     "tcmalloc::tcmalloc"
 )

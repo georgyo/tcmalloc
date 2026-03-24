@@ -79,7 +79,7 @@
 #include "absl/numeric/bits.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "absl/strings/resize_and_overwrite.h"
+#include <string>
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
@@ -223,17 +223,15 @@ extern "C" void MallocExtension_Internal_GetStats(std::string* ret) {
     // Double ret's size until we succeed in writing the buffer without
     // truncation.
     bool success = false;
-    absl::StringResizeAndOverwrite(
-        *ret, size - 1,
-        [&](char* buffer,
-            size_t buffer_size) ABSL_ATTRIBUTE_ALWAYS_INLINE -> size_t {
-          size_t written_size = TCMalloc_Internal_GetStats(buffer, buffer_size);
-          if (written_size < buffer_size) {
-            success = true;
-            return written_size;
-          }
-          return 0;
-        });
+    ret->resize(size - 1);
+    size_t buffer_size = ret->size();
+    size_t written_size = TCMalloc_Internal_GetStats(ret->data(), buffer_size);
+    if (written_size < buffer_size) {
+      success = true;
+      ret->resize(written_size);
+    } else {
+      ret->clear();
+    }
     if (success) {
       return;
     }

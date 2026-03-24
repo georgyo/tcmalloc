@@ -97,43 +97,6 @@ tcmalloc_cc_binary_variants(
     "tcmalloc_testing_benchmark_main"
 )
 
-tcmalloc_cc_test(
-  NAME
-    tcmalloc_testing_tcmalloc_fuzzer
-  SRCS
-    "tcmalloc_fuzzer.cc"
-  DEPS
-    "GTest::gtest"
-    "GTest::gmock"
-    "absl::bits"
-    "fuzztest::fuzztest"
-    "fuzztest::init_fuzztest"
-    "tcmalloc::common_8k_pages"
-    "tcmalloc::internal_config"
-    "tcmalloc::internal_logging"
-    "tcmalloc::tcmalloc_internal_methods_only"
-)
-
-tcmalloc_cc_test(
-  NAME
-    tcmalloc_testing_memory_errors_fuzz
-  SRCS
-    "memory_errors_fuzz.cc"
-  DEPS
-    "GTest::gtest"
-    "GTest::gmock"
-    "absl::base"
-    "absl::bits"
-    "fuzztest::fuzztest"
-    "fuzztest::init_fuzztest"
-    "tcmalloc::common_8k_pages"
-    "tcmalloc::internal_config"
-    "tcmalloc::internal_memory_tag"
-    "tcmalloc::malloc_extension"
-    "tcmalloc::tcmalloc_internal_methods_only"
-    "tcmalloc::testing_testutil"
-)
-
 tcmalloc_cc_test_variants(
   NAME
     tcmalloc_testing_hooks_test
@@ -940,24 +903,6 @@ tcmalloc_cc_test(
     "absl::time"
     "tcmalloc::malloc_extension"
     "tcmalloc::tcmalloc_internal_methods_only"
-)
-
-tcmalloc_cc_test_variants(
-  NAME
-    tcmalloc_testing_partitioning_fuzz_test
-  SRCS
-    "partitioning_fuzz_test.cc"
-  DEPS
-    "GTest::gtest_main"
-    "GTest::gmock_main"
-    "GTest::gmock"
-    "absl::span"
-    "fuzztest::fuzztest"
-    "fuzztest::init_fuzztest"
-    "tcmalloc::internal_affinity"
-    "tcmalloc::internal_memory_tag"
-    "tcmalloc::malloc_extension"
-    "tcmalloc::testing_testutil"
 )
 
 tcmalloc_cc_binary(

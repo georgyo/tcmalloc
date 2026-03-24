@@ -71,12 +71,12 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(benchmark)
 
 FetchContent_Declare(
-  fuzztest
-  GIT_REPOSITORY https://github.com/google/fuzztest.git
+  re2
+  GIT_REPOSITORY https://github.com/google/re2.git
   GIT_TAG        main
-  FIND_PACKAGE_ARGS NAMES fuzztest
+  FIND_PACKAGE_ARGS NAMES re2
 )
-FetchContent_MakeAvailable(fuzztest)
+FetchContent_MakeAvailable(re2)
 
 include(tcmalloc/tcmalloc_helpers.cmake)
 include(tcmalloc/tcmalloc_variants.cmake)

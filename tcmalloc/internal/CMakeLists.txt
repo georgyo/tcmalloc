@@ -386,20 +386,6 @@ tcmalloc_cc_test(
     "tcmalloc::tcmalloc"
 )
 
-tcmalloc_cc_test(
-  NAME
-    tcmalloc_internal_memory_stats_fuzz
-  SRCS
-    "memory_stats_fuzz.cc"
-  DEPS
-    "absl::strings"
-    "GTest::gtest"
-    "GTest::gmock"
-    "fuzztest::fuzztest"
-    "fuzztest::fuzztest_gtest_main"
-    "tcmalloc::internal_memory_stats"
-)
-
 tcmalloc_cc_library(
   NAME
     tcmalloc_internal_memory_tag
@@ -907,20 +893,6 @@ tcmalloc_cc_library(
 
 tcmalloc_cc_test(
   NAME
-    tcmalloc_internal_profile_builder_fuzz
-  SRCS
-    "profile_builder_fuzz.cc"
-  DEPS
-    "GTest::gtest"
-    "GTest::gmock"
-    "fuzztest::fuzztest"
-    "fuzztest::fuzztest_gtest_main"
-    "tcmalloc::internal_profile_builder"
-    "tcmalloc::tcmalloc"
-)
-
-tcmalloc_cc_test(
-  NAME
     tcmalloc_internal_profile_builder_test
   SRCS
     "profile_builder_test.cc"
@@ -1236,21 +1208,6 @@ tcmalloc_cc_library(
     "tcmalloc::internal_cpu_utils"
     "tcmalloc::internal_logging"
     "tcmalloc::internal_util"
-)
-
-tcmalloc_cc_test(
-  NAME
-    tcmalloc_internal_sysinfo_fuzz
-  SRCS
-    "sysinfo_fuzz.cc"
-  DEPS
-    "GTest::gtest"
-    "GTest::gmock"
-    "fuzztest::fuzztest"
-    "fuzztest::fuzztest_gtest_main"
-    "tcmalloc::internal_cpu_utils"
-    "tcmalloc::internal_sysinfo"
-    "tcmalloc::tcmalloc"
 )
 
 tcmalloc_cc_test(

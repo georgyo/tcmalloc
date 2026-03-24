@@ -295,19 +295,17 @@ double AndersonDarlingTest(absl::Span<const double> random_sample);
 
 template <typename Function>
 std::string PrintToString(size_t buffer_size, Function&& f) {
-  std::string buf;
-  absl::StringResizeAndOverwrite(buf, buffer_size, [&](char* ptr, size_t size) {
-    tcmalloc_internal::Printer p(ptr, size);
-    if constexpr (std::is_invocable_v<Function,
-                                      tcmalloc_internal::PbtxtRegion&>) {
-      tcmalloc_internal::PbtxtRegion r(p, tcmalloc_internal::kTop);
-      f(r);
-    } else {
-      f(p);
-    }
-    TC_CHECK_LE(p.SpaceRequired(), size);
-    return p.SpaceRequired();
-  });
+  std::string buf(buffer_size, '\0');
+  tcmalloc_internal::Printer p(buf.data(), buffer_size);
+  if constexpr (std::is_invocable_v<Function,
+                                    tcmalloc_internal::PbtxtRegion&>) {
+    tcmalloc_internal::PbtxtRegion r(p, tcmalloc_internal::kTop);
+    f(r);
+  } else {
+    f(p);
+  }
+  TC_CHECK_LE(p.SpaceRequired(), buffer_size);
+  buf.resize(p.SpaceRequired());
   return buf;
 }
 

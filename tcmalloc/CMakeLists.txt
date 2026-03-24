@@ -1740,9 +1740,12 @@ else()
 endif()
 # Use a linker version script to export only tcmalloc's public API,
 # hiding all abseil and internal symbols.
+# Statically link libstdc++ and libgcc so the .so only depends on libc.
 target_link_options(tcmalloc_shared PRIVATE
   "LINKER:--version-script=${CMAKE_CURRENT_SOURCE_DIR}/exported_symbols.lds"
   "LINKER:--exclude-libs,ALL"
+  -static-libstdc++
+  -static-libgcc
 )
 set_target_properties(tcmalloc_shared PROPERTIES
   OUTPUT_NAME "tcmalloc"
@@ -1791,6 +1794,36 @@ endforeach()
 foreach(lib IN LISTS TCMALLOC_ABSL_STATIC_LIBS)
   list(APPEND TCMALLOC_STATIC_ARCHIVES "${lib}")
 endforeach()
+
+# Find and include libstdc++ and libgcc static archives so the bundled
+# .a is fully self-contained (only depends on libc at link time).
+execute_process(
+  COMMAND ${CMAKE_CXX_COMPILER} -print-file-name=libstdc++.a
+  OUTPUT_VARIABLE TCMALLOC_LIBSTDCXX_A
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+execute_process(
+  COMMAND ${CMAKE_CXX_COMPILER} -print-file-name=libgcc.a
+  OUTPUT_VARIABLE TCMALLOC_LIBGCC_A
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+execute_process(
+  COMMAND ${CMAKE_CXX_COMPILER} -print-file-name=libgcc_eh.a
+  OUTPUT_VARIABLE TCMALLOC_LIBGCC_EH_A
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+if(EXISTS "${TCMALLOC_LIBSTDCXX_A}")
+  list(APPEND TCMALLOC_STATIC_ARCHIVES "${TCMALLOC_LIBSTDCXX_A}")
+  message(STATUS "tcmalloc_bundled: including ${TCMALLOC_LIBSTDCXX_A}")
+endif()
+if(EXISTS "${TCMALLOC_LIBGCC_A}")
+  list(APPEND TCMALLOC_STATIC_ARCHIVES "${TCMALLOC_LIBGCC_A}")
+  message(STATUS "tcmalloc_bundled: including ${TCMALLOC_LIBGCC_A}")
+endif()
+if(EXISTS "${TCMALLOC_LIBGCC_EH_A}")
+  list(APPEND TCMALLOC_STATIC_ARCHIVES "${TCMALLOC_LIBGCC_EH_A}")
+  message(STATUS "tcmalloc_bundled: including ${TCMALLOC_LIBGCC_EH_A}")
+endif()
 
 set(TCMALLOC_FAT_STATIC_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/libtcmalloc_bundled.a")
 # Write the list of archives to a response file at build time to avoid

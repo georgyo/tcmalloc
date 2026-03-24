@@ -35,6 +35,36 @@ endforeach()
 
 file(GLOB_RECURSE all_objects "${WORKDIR}/*.o")
 
+# Remove libstdc++ new/delete objects that conflict with tcmalloc's overrides.
+# tcmalloc provides its own operator new/delete, so we must exclude libstdc++'s.
+set(CONFLICTING_PATTERNS
+  "new_op" "new_opnt" "new_opv" "new_opvnt"
+  "new_opa" "new_opant" "new_opva" "new_opvant"
+  "del_op" "del_opnt" "del_opv" "del_opvnt"
+  "del_ops" "del_opvs"
+  "del_opa" "del_opant" "del_opva" "del_opvant"
+  "del_opsa" "del_opvsa"
+)
+set(filtered_objects "")
+foreach(obj IN LISTS all_objects)
+  get_filename_component(obj_name "${obj}" NAME_WE)
+  get_filename_component(obj_parent "${obj}" DIRECTORY)
+  get_filename_component(parent_name "${obj_parent}" NAME)
+  set(skip FALSE)
+  if(parent_name STREQUAL "libstdc++")
+    foreach(pattern IN LISTS CONFLICTING_PATTERNS)
+      if(obj_name STREQUAL "${pattern}")
+        set(skip TRUE)
+        break()
+      endif()
+    endforeach()
+  endif()
+  if(NOT skip)
+    list(APPEND filtered_objects "${obj}")
+  endif()
+endforeach()
+set(all_objects ${filtered_objects})
+
 # Partial link all objects into a single relocatable object
 set(MERGED_OBJ "${WORKDIR}/tcmalloc_merged.o")
 execute_process(

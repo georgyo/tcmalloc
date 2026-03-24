@@ -1749,8 +1749,10 @@ add_custom_command(
     -DARCHIVES_FILE=${TCMALLOC_ARCHIVES_FILE}
     -DOUTPUT=${TCMALLOC_FAT_STATIC_OUTPUT}
     -DWORKDIR=${CMAKE_CURRENT_BINARY_DIR}/tcmalloc_bundled_objs
+    -DEXPORTED_SYMS=${CMAKE_CURRENT_SOURCE_DIR}/exported_symbols.txt
     -P ${CMAKE_CURRENT_SOURCE_DIR}/bundle_static.cmake
   DEPENDS ${TCMALLOC_STATIC_DEPS} ${TCMALLOC_ABSL_DEPS}
+    ${CMAKE_CURRENT_SOURCE_DIR}/exported_symbols.txt
   COMMENT "Bundling tcmalloc fat static library"
 )
 add_custom_target(tcmalloc_bundled ALL DEPENDS "${TCMALLOC_FAT_STATIC_OUTPUT}")

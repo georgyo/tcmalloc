@@ -1654,3 +1654,104 @@ set_target_properties(tcmalloc_shared PROPERTIES
   SOVERSION 4
 )
 
+# Fat static library that bundles tcmalloc and all its dependencies into a
+# single .a archive. This ensures all symbols (malloc, free, new, delete, etc.)
+# are available without needing to link multiple archives.
+set(TCMALLOC_STATIC_DEPS
+  tcmalloc_tcmalloc
+  tcmalloc_common_8k_pages
+  tcmalloc_malloc_extension
+  tcmalloc_malloc_tracing_extension
+  tcmalloc_malloc_hook
+  tcmalloc_experiment
+  tcmalloc_alloc_at_least
+  tcmalloc_internal_allocation_guard
+  tcmalloc_internal_cache_topology
+  tcmalloc_internal_environment
+  tcmalloc_internal_hook_list
+  tcmalloc_internal_logging
+  tcmalloc_internal_memory_stats
+  tcmalloc_internal_memory_tag
+  tcmalloc_internal_mincore
+  tcmalloc_internal_numa
+  tcmalloc_internal_page_size
+  tcmalloc_internal_pageflags
+  tcmalloc_internal_percpu
+  tcmalloc_internal_residency
+  tcmalloc_internal_strerror
+  tcmalloc_internal_sysinfo
+  tcmalloc_internal_system_allocator
+  tcmalloc_internal_util
+)
+# Abseil dependencies to bundle for a fully self-contained archive
+set(TCMALLOC_ABSL_DEPS
+  absl_base
+  absl_malloc_internal
+  absl_raw_logging_internal
+  absl_log_severity
+  absl_spinlock_wait
+  absl_strerror
+  absl_throw_delegate
+  absl_tracing_internal
+  absl_hashtablez_sampler
+  absl_raw_hash_set
+  absl_debugging_internal
+  absl_decode_rust_punycode
+  absl_demangle_internal
+  absl_demangle_rust
+  absl_stacktrace
+  absl_symbolize
+  absl_utf8_for_code_point
+  absl_city
+  absl_hash
+  absl_int128
+  absl_exponential_biased
+  absl_status
+  absl_statusor
+  absl_cord
+  absl_cord_internal
+  absl_cordz_functions
+  absl_cordz_handle
+  absl_cordz_info
+  absl_str_format_internal
+  absl_strings
+  absl_strings_internal
+  absl_graphcycles_internal
+  absl_kernel_timeout_internal
+  absl_synchronization
+  absl_civil_time
+  absl_time
+  absl_time_zone
+  absl_crc32c
+  absl_crc_cord_state
+  absl_crc_cpu_detect
+  absl_crc_internal
+  absl_leak_check
+)
+
+# Build generator expression list of archive paths
+set(TCMALLOC_STATIC_ARCHIVES "")
+foreach(dep IN LISTS TCMALLOC_STATIC_DEPS TCMALLOC_ABSL_DEPS)
+  list(APPEND TCMALLOC_STATIC_ARCHIVES "$<TARGET_FILE:${dep}>")
+endforeach()
+
+set(TCMALLOC_FAT_STATIC_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/libtcmalloc_bundled.a")
+# Write the list of archives to a response file at build time to avoid
+# shell escaping issues with generator expressions.
+set(TCMALLOC_ARCHIVES_FILE "${CMAKE_CURRENT_BINARY_DIR}/tcmalloc_bundled_archives.txt")
+file(GENERATE OUTPUT "${TCMALLOC_ARCHIVES_FILE}"
+  CONTENT "$<JOIN:${TCMALLOC_STATIC_ARCHIVES},\n>\n"
+)
+add_custom_command(
+  OUTPUT "${TCMALLOC_FAT_STATIC_OUTPUT}"
+  COMMAND ${CMAKE_COMMAND}
+    -DAR=${CMAKE_AR}
+    -DARCHIVES_FILE=${TCMALLOC_ARCHIVES_FILE}
+    -DOUTPUT=${TCMALLOC_FAT_STATIC_OUTPUT}
+    -DWORKDIR=${CMAKE_CURRENT_BINARY_DIR}/tcmalloc_bundled_objs
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/bundle_static.cmake
+  DEPENDS ${TCMALLOC_STATIC_DEPS} ${TCMALLOC_ABSL_DEPS}
+  COMMENT "Bundling tcmalloc fat static library"
+)
+add_custom_target(tcmalloc_bundled ALL DEPENDS "${TCMALLOC_FAT_STATIC_OUTPUT}")
+

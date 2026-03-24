@@ -1648,10 +1648,16 @@ target_link_libraries(tcmalloc_shared PRIVATE
   tcmalloc_alloc_at_least
   -Wl,--no-whole-archive
 )
+# Use a linker version script to export only tcmalloc's public API,
+# hiding all abseil and internal symbols.
+target_link_options(tcmalloc_shared PRIVATE
+  "LINKER:--version-script=${CMAKE_CURRENT_SOURCE_DIR}/exported_symbols.lds"
+)
 set_target_properties(tcmalloc_shared PROPERTIES
   OUTPUT_NAME "tcmalloc"
   VERSION 4.0.0
   SOVERSION 4
+  LINK_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/exported_symbols.lds"
 )
 
 # Fat static library that bundles tcmalloc and all its dependencies into a
@@ -1683,51 +1689,63 @@ set(TCMALLOC_STATIC_DEPS
   tcmalloc_internal_system_allocator
   tcmalloc_internal_util
 )
-# Abseil dependencies to bundle for a fully self-contained archive
-set(TCMALLOC_ABSL_DEPS
-  absl_base
-  absl_malloc_internal
-  absl_raw_logging_internal
-  absl_log_severity
-  absl_spinlock_wait
-  absl_strerror
-  absl_throw_delegate
-  absl_tracing_internal
-  absl_hashtablez_sampler
-  absl_raw_hash_set
-  absl_debugging_internal
-  absl_decode_rust_punycode
-  absl_demangle_internal
-  absl_demangle_rust
-  absl_stacktrace
-  absl_symbolize
-  absl_utf8_for_code_point
-  absl_city
-  absl_hash
-  absl_int128
-  absl_exponential_biased
-  absl_status
-  absl_statusor
-  absl_cord
-  absl_cord_internal
-  absl_cordz_functions
-  absl_cordz_handle
-  absl_cordz_info
-  absl_str_format_internal
-  absl_strings
-  absl_strings_internal
-  absl_graphcycles_internal
-  absl_kernel_timeout_internal
-  absl_synchronization
-  absl_civil_time
-  absl_time
-  absl_time_zone
-  absl_crc32c
-  absl_crc_cord_state
-  absl_crc_cpu_detect
-  absl_crc_internal
-  absl_leak_check
-)
+# When abseil is built via FetchContent (not system package), bundle it too.
+# Check if the absl_base target exists as a real (non-imported) target.
+set(TCMALLOC_ABSL_DEPS "")
+if(TARGET absl_base)
+  get_target_property(_absl_base_imported absl_base IMPORTED)
+  if(NOT _absl_base_imported)
+    set(TCMALLOC_ABSL_DEPS
+      absl_base
+      absl_malloc_internal
+      absl_raw_logging_internal
+      absl_log_severity
+      absl_spinlock_wait
+      absl_strerror
+      absl_throw_delegate
+      absl_tracing_internal
+      absl_hashtablez_sampler
+      absl_raw_hash_set
+      absl_debugging_internal
+      absl_decode_rust_punycode
+      absl_demangle_internal
+      absl_demangle_rust
+      absl_stacktrace
+      absl_symbolize
+      absl_utf8_for_code_point
+      absl_city
+      absl_hash
+      absl_int128
+      absl_exponential_biased
+      absl_status
+      absl_statusor
+      absl_cord
+      absl_cord_internal
+      absl_cordz_functions
+      absl_cordz_handle
+      absl_cordz_info
+      absl_str_format_internal
+      absl_strings
+      absl_strings_internal
+      absl_graphcycles_internal
+      absl_kernel_timeout_internal
+      absl_synchronization
+      absl_civil_time
+      absl_time
+      absl_time_zone
+      absl_crc32c
+      absl_crc_cord_state
+      absl_crc_cpu_detect
+      absl_crc_internal
+      absl_leak_check
+    )
+    message(STATUS "tcmalloc_bundled: bundling abseil from FetchContent")
+  else()
+    message(STATUS "tcmalloc_bundled: abseil is a system package, not bundling")
+  endif()
+else()
+  message(STATUS "tcmalloc_bundled: absl_base target not found, not bundling abseil")
+endif()
 
 # Build generator expression list of archive paths
 set(TCMALLOC_STATIC_ARCHIVES "")

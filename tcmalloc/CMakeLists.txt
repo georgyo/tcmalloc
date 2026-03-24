@@ -1626,3 +1626,31 @@ tcmalloc_cc_library(
     "absl::core_headers"
 )
 
+# Shared library target that bundles tcmalloc with all dependencies
+# into a single .so that can be used via LD_PRELOAD or linked directly.
+add_library(tcmalloc_shared SHARED)
+target_sources(tcmalloc_shared PRIVATE
+  "libc_override.h"
+  "tcmalloc.cc"
+  "tcmalloc.h"
+)
+target_compile_options(tcmalloc_shared PRIVATE -DTCMALLOC_INTERNAL_8K_PAGES)
+target_include_directories(tcmalloc_shared PUBLIC ${CMAKE_SOURCE_DIR})
+# Use -Wl,--whole-archive to ensure all symbols from static libs are included
+# in the shared library, not just those referenced.
+target_link_libraries(tcmalloc_shared PRIVATE
+  -Wl,--whole-archive
+  tcmalloc_common_8k_pages
+  tcmalloc_malloc_extension
+  tcmalloc_malloc_tracing_extension
+  tcmalloc_malloc_hook
+  tcmalloc_experiment
+  tcmalloc_alloc_at_least
+  -Wl,--no-whole-archive
+)
+set_target_properties(tcmalloc_shared PROPERTIES
+  OUTPUT_NAME "tcmalloc"
+  VERSION 4.0.0
+  SOVERSION 4
+)
+

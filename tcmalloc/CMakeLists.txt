@@ -1626,76 +1626,14 @@ tcmalloc_cc_library(
     "absl::core_headers"
 )
 
-# Shared library target that bundles tcmalloc with all dependencies
-# into a single .so that can be used via LD_PRELOAD or linked directly.
-add_library(tcmalloc_shared SHARED)
-target_sources(tcmalloc_shared PRIVATE
-  "libc_override.h"
-  "tcmalloc.cc"
-  "tcmalloc.h"
-)
-target_compile_options(tcmalloc_shared PRIVATE -DTCMALLOC_INTERNAL_8K_PAGES)
-target_include_directories(tcmalloc_shared PUBLIC ${CMAKE_SOURCE_DIR})
-# Use -Wl,--whole-archive to ensure all symbols from static libs are included
-# in the shared library, not just those referenced.
-target_link_libraries(tcmalloc_shared PRIVATE
-  -Wl,--whole-archive
-  tcmalloc_common_8k_pages
-  tcmalloc_malloc_extension
-  tcmalloc_malloc_tracing_extension
-  tcmalloc_malloc_hook
-  tcmalloc_experiment
-  tcmalloc_alloc_at_least
-  -Wl,--no-whole-archive
-)
-# Use a linker version script to export only tcmalloc's public API,
-# hiding all abseil and internal symbols.
-target_link_options(tcmalloc_shared PRIVATE
-  "LINKER:--version-script=${CMAKE_CURRENT_SOURCE_DIR}/exported_symbols.lds"
-)
-set_target_properties(tcmalloc_shared PROPERTIES
-  OUTPUT_NAME "tcmalloc"
-  VERSION 4.0.0
-  SOVERSION 4
-  LINK_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/exported_symbols.lds"
-)
-
-# Fat static library that bundles tcmalloc and all its dependencies into a
-# single .a archive. This ensures all symbols (malloc, free, new, delete, etc.)
-# are available without needing to link multiple archives.
-set(TCMALLOC_STATIC_DEPS
-  tcmalloc_tcmalloc
-  tcmalloc_common_8k_pages
-  tcmalloc_malloc_extension
-  tcmalloc_malloc_tracing_extension
-  tcmalloc_malloc_hook
-  tcmalloc_experiment
-  tcmalloc_alloc_at_least
-  tcmalloc_internal_allocation_guard
-  tcmalloc_internal_cache_topology
-  tcmalloc_internal_environment
-  tcmalloc_internal_hook_list
-  tcmalloc_internal_logging
-  tcmalloc_internal_memory_stats
-  tcmalloc_internal_memory_tag
-  tcmalloc_internal_mincore
-  tcmalloc_internal_numa
-  tcmalloc_internal_page_size
-  tcmalloc_internal_pageflags
-  tcmalloc_internal_percpu
-  tcmalloc_internal_residency
-  tcmalloc_internal_strerror
-  tcmalloc_internal_sysinfo
-  tcmalloc_internal_system_allocator
-  tcmalloc_internal_util
-)
-# When abseil is built via FetchContent (not system package), bundle it too.
-# Check if the absl_base target exists as a real (non-imported) target.
-set(TCMALLOC_ABSL_DEPS "")
+# Collect the list of abseil static library targets to bundle.
+# When abseil is built via FetchContent, use the build targets directly.
+# When abseil is a system package (imported), find the static .a files.
+set(TCMALLOC_ABSL_TARGETS "")
 if(TARGET absl_base)
   get_target_property(_absl_base_imported absl_base IMPORTED)
   if(NOT _absl_base_imported)
-    set(TCMALLOC_ABSL_DEPS
+    set(TCMALLOC_ABSL_TARGETS
       absl_base
       absl_malloc_internal
       absl_raw_logging_internal
@@ -1739,18 +1677,119 @@ if(TARGET absl_base)
       absl_crc_internal
       absl_leak_check
     )
-    message(STATUS "tcmalloc_bundled: bundling abseil from FetchContent")
+    message(STATUS "tcmalloc: bundling abseil from FetchContent into shared and static libs")
   else()
-    message(STATUS "tcmalloc_bundled: abseil is a system package, not bundling")
+    # System-installed abseil: find all static .a files to link into the .so
+    get_target_property(_absl_base_location absl::base LOCATION)
+    get_filename_component(_absl_lib_dir "${_absl_base_location}" DIRECTORY)
+    file(GLOB TCMALLOC_ABSL_STATIC_LIBS "${_absl_lib_dir}/libabsl_*.a")
+    message(STATUS "tcmalloc: bundling system abseil static libs from ${_absl_lib_dir}")
   endif()
-else()
-  message(STATUS "tcmalloc_bundled: absl_base target not found, not bundling abseil")
 endif()
 
-# Build generator expression list of archive paths
+# Shared library target that bundles tcmalloc with all dependencies
+# into a single .so that can be used via LD_PRELOAD or linked directly.
+add_library(tcmalloc_shared SHARED)
+target_sources(tcmalloc_shared PRIVATE
+  "libc_override.h"
+  "tcmalloc.cc"
+  "tcmalloc.h"
+)
+target_compile_options(tcmalloc_shared PRIVATE -DTCMALLOC_INTERNAL_8K_PAGES)
+target_include_directories(tcmalloc_shared PUBLIC ${CMAKE_SOURCE_DIR})
+# Use -Wl,--whole-archive to ensure all symbols from static libs are included
+# in the shared library, not just those referenced.
+# Also statically link abseil so the .so is self-contained.
+if(TCMALLOC_ABSL_TARGETS)
+  # FetchContent abseil: use target names
+  target_link_libraries(tcmalloc_shared PRIVATE
+    -Wl,--whole-archive
+    tcmalloc_common_8k_pages
+    tcmalloc_malloc_extension
+    tcmalloc_malloc_tracing_extension
+    tcmalloc_malloc_hook
+    tcmalloc_experiment
+    tcmalloc_alloc_at_least
+    ${TCMALLOC_ABSL_TARGETS}
+    -Wl,--no-whole-archive
+  )
+elseif(TCMALLOC_ABSL_STATIC_LIBS)
+  # System abseil: use static .a file paths directly
+  target_link_libraries(tcmalloc_shared PRIVATE
+    -Wl,--whole-archive
+    tcmalloc_common_8k_pages
+    tcmalloc_malloc_extension
+    tcmalloc_malloc_tracing_extension
+    tcmalloc_malloc_hook
+    tcmalloc_experiment
+    tcmalloc_alloc_at_least
+    ${TCMALLOC_ABSL_STATIC_LIBS}
+    -Wl,--no-whole-archive
+  )
+else()
+  target_link_libraries(tcmalloc_shared PRIVATE
+    -Wl,--whole-archive
+    tcmalloc_common_8k_pages
+    tcmalloc_malloc_extension
+    tcmalloc_malloc_tracing_extension
+    tcmalloc_malloc_hook
+    tcmalloc_experiment
+    tcmalloc_alloc_at_least
+    -Wl,--no-whole-archive
+  )
+endif()
+# Use a linker version script to export only tcmalloc's public API,
+# hiding all abseil and internal symbols.
+target_link_options(tcmalloc_shared PRIVATE
+  "LINKER:--version-script=${CMAKE_CURRENT_SOURCE_DIR}/exported_symbols.lds"
+  "LINKER:--exclude-libs,ALL"
+)
+set_target_properties(tcmalloc_shared PROPERTIES
+  OUTPUT_NAME "tcmalloc"
+  VERSION 4.0.0
+  SOVERSION 4
+  LINK_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/exported_symbols.lds"
+)
+
+# Fat static library that bundles tcmalloc and all its dependencies into a
+# single .a archive. This ensures all symbols (malloc, free, new, delete, etc.)
+# are available without needing to link multiple archives.
+set(TCMALLOC_STATIC_DEPS
+  tcmalloc_tcmalloc
+  tcmalloc_common_8k_pages
+  tcmalloc_malloc_extension
+  tcmalloc_malloc_tracing_extension
+  tcmalloc_malloc_hook
+  tcmalloc_experiment
+  tcmalloc_alloc_at_least
+  tcmalloc_internal_allocation_guard
+  tcmalloc_internal_cache_topology
+  tcmalloc_internal_environment
+  tcmalloc_internal_hook_list
+  tcmalloc_internal_logging
+  tcmalloc_internal_memory_stats
+  tcmalloc_internal_memory_tag
+  tcmalloc_internal_mincore
+  tcmalloc_internal_numa
+  tcmalloc_internal_page_size
+  tcmalloc_internal_pageflags
+  tcmalloc_internal_percpu
+  tcmalloc_internal_residency
+  tcmalloc_internal_strerror
+  tcmalloc_internal_sysinfo
+  tcmalloc_internal_system_allocator
+  tcmalloc_internal_util
+)
+# Build generator expression list of archive paths for the bundled static lib.
+# Use TCMALLOC_ABSL_TARGETS (set above) for FetchContent abseil, or
+# TCMALLOC_ABSL_STATIC_LIBS for system abseil .a files.
 set(TCMALLOC_STATIC_ARCHIVES "")
-foreach(dep IN LISTS TCMALLOC_STATIC_DEPS TCMALLOC_ABSL_DEPS)
+foreach(dep IN LISTS TCMALLOC_STATIC_DEPS TCMALLOC_ABSL_TARGETS)
   list(APPEND TCMALLOC_STATIC_ARCHIVES "$<TARGET_FILE:${dep}>")
+endforeach()
+# For system abseil, add the .a paths directly (not generator expressions)
+foreach(lib IN LISTS TCMALLOC_ABSL_STATIC_LIBS)
+  list(APPEND TCMALLOC_STATIC_ARCHIVES "${lib}")
 endforeach()
 
 set(TCMALLOC_FAT_STATIC_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/libtcmalloc_bundled.a")

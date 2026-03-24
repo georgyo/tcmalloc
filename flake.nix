@@ -14,6 +14,14 @@
       packages = forAllSystems (system:
         let
           pkgs = nixpkgs.legacyPackages.${system};
+
+          # Build abseil-cpp as static libraries so we can bundle them
+          # into libtcmalloc.so without exposing abseil symbols.
+          abseil-cpp-static = pkgs.abseil-cpp.overrideAttrs (old: {
+            cmakeFlags = (old.cmakeFlags or []) ++ [
+              "-DBUILD_SHARED_LIBS=OFF"
+            ];
+          });
         in
         {
           default = self.packages.${system}.tcmalloc;
@@ -26,15 +34,17 @@
 
             nativeBuildInputs = with pkgs; [
               cmake
+              pkg-config
             ];
 
-            buildInputs = with pkgs; [
-              abseil-cpp
+            buildInputs = [
+              abseil-cpp-static
+            ] ++ (with pkgs; [
               gtest
               protobuf
               gbenchmark
               re2
-            ];
+            ]);
 
             cmakeFlags = [
               "-DCMAKE_BUILD_TYPE=Release"

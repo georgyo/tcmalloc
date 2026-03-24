@@ -44,6 +44,7 @@
               protobuf
               gbenchmark
               re2
+              zlib
             ]);
 
             cmakeFlags = [
@@ -51,10 +52,19 @@
               "-DFETCHCONTENT_FULLY_DISCONNECTED=ON"
             ];
 
-            buildFlags = [
-              "tcmalloc_shared"
-              "tcmalloc_bundled"
-            ];
+            doCheck = true;
+
+            checkPhase = ''
+              runHook preCheck
+              # Run non-variant tests (skip the many variant permutations
+              # like _32k_pages, _256k_pages, _numa_aware, etc.)
+              # Exclude tests that require /proc/cpuinfo or /sys/devices/system/cpu
+              # which are unavailable in the nix build sandbox.
+              ctest --output-on-failure -j$NIX_BUILD_CORES \
+                -R '_test$' \
+                -E 'guarded_page_allocator|cache_topology_test|percpu_tcmalloc_test|sysinfo_test|logging_test|system_malloc_test'
+              runHook postCheck
+            '';
 
             installPhase = ''
               runHook preInstall
